@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "HD Wallet Generator"
+version = "1.0.0"
+description = ""
+authors = ["Jemshit Iskenderov <jemshit@mail.com>"]
+
+[tool.poetry.dependencies]
+# https://github.com/python-poetry/poetry/issues/1413
+python = "~3.9"
+coincurve = "^17.0.0"
+eth-hash = "^0.3.2"
+pycryptodome = "^3.14.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
