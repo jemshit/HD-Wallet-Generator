@@ -27,6 +27,7 @@ def is_prv_key_valid(prv_key: bytes) \
 # for extra check (uses coincurve, we don't use it anywhere else)
 def is_pub_key_valid(pub_key: bytes) \
         -> bool:
+    # todo: also (x**3 + 7 - y**2) % p = must be zero to be valid x and y
     try:
         coincurve.PublicKey(pub_key)
         return True

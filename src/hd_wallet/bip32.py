@@ -237,7 +237,9 @@ class BIP32Node:
     def convert_to_public(self) \
             -> 'BIP32Node':
         """
-        :return: new BIP32Node that hosts 'xpub', only if child_index is not hardened
+        There is no 'public' and 'private' node in reality, just 'prv' and 'pub' keys. This method just hides 'prv' key
+
+        :return: new BIP32Node that hosts 'xpub' by hiding 'xprv', only if child_index is not hardened
         """
 
         if not self.is_private():
