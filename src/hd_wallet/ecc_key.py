@@ -106,7 +106,6 @@ class ECPubKey(object):
             -> ctypes.Array:
         """
         :param pub_key: Can be both compressed (65 byte) and uncompressed (33 byte)
-
         :return: 64 byte, uncompressed
         """
 
@@ -160,7 +159,6 @@ class ECPubKey(object):
         Use compressed=True always for child key derivation functions
 
         :param compressed: to compress Y & -Y or not. Because they are identical values with different signs, it can be compressed
-
         :return: "header+x+y" 65 byte or "header+x" 33 byte
         """
 

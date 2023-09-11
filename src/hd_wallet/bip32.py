@@ -220,6 +220,7 @@ class BIP32Node:
             -> bytes:
         """
         Use this to not mis-align parts while merging. Specify parameter names explicitly when calling
+
         :return: 78 byte
         """
 
@@ -288,7 +289,6 @@ class BIP32Node:
         without the parent privateKey.
 
         :param path: it is path after this node (relative path)
-
         :return: BIP32Node with ECPrvKey
         """
 
@@ -386,7 +386,6 @@ class BIP32Node:
         It is only defined for non-hardened child keys.
 
         :param path: it is path after this node (relative path)
-
         :return: BIP32Node with ECPubKey
         """
 

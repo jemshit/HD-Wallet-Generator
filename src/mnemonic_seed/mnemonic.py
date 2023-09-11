@@ -15,43 +15,60 @@ from src.common.cryptography import hmac_sha512, sha256
 from src.common.network import VERSION_BYTES, Network
 from src.common.util import binary_search, normalize_string, base58_encode_with_checksum
 
-"""
-Libs:
-- https://github.com/trezor/python-mnemonic
-- https://github.com/ethereum/eth-account (more readable version of 'python-mnemonic')
-- https://iancoleman.io/bip39/ (use to confirm [words-seed] pair)
-
-Specs:
-- https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
-
-Blogs:
-- https://wolovim.medium.com/ethereum-201-mnemonics-bb01a9108c38
-- https://academy.horizen.io/technology/expert/generating-keys-and-addresses/
-- https://cypherpunks-core.github.io/ethereumbook/05wallets.html
-"""
-
 
 class Mnemonic(object):
     """
-    Source 1: <https://github.com/trezor/python-mnemonic>
-    Source 2: <https://github.com/ethereum/eth-account>
+    Source Libs:
+    - https://github.com/trezor/python-mnemonic
+    - https://github.com/ethereum/eth-account (more readable version of 'python-mnemonic')
+    \n
+    Sites:
+    - https://iancoleman.io/bip39/ (use to confirm [words-seed] pair)
+    \n
+    Specs:
+    - https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+    \n
+    Blogs:
+    - https://wolovim.medium.com/ethereum-201-mnemonics-bb01a9108c38
+    - https://academy.horizen.io/technology/expert/generating-keys-and-addresses/
+    - https://cypherpunks-core.github.io/ethereumbook/05wallets.html
     """
 
-    # static class variables
     cached_wordlists: Dict[str, List[str]] = dict()
+    """ 
+    Static variable, shared by all instances of :class:`Mnemonic` class.\n
+    :class:`Mnemonic` object is also created implicitly inside **Mnemonic.detect_language** method
+    """
     cached_language_list: List[str] = list()
+    """
+    Used by **Mnemonic.get_languages** to cache the response
+    """
+    __valid_languages: set[str] = {"chinese simplified", "chinese_simplified", "chinese traditional",
+                                   "chinese_traditional", "english", "french", "italian", "japanese",
+                                   "korean", "spanish"}
 
     def __init__(self, language: str = "english"):
+        """
+        :param language: Possible values: **chinese simplified**, **chinese traditional**, **english**, **french**,
+                        **italian**, **japanese**, **korean**, **spanish**
+        """
         self.language: str = language.lower().replace(' ', '_')
+        if self.language not in Mnemonic.__valid_languages:
+            raise Exception("language argument is not valid. Must be one of these:"
+                            "chinese simplified, chinese traditional, english, french, "
+                            "italian, japanese, korean, spanish")
         self.word_count: int = 2048
         self.wordlist: List[str] = self.get_wordlist()
 
     def get_wordlist(self) \
             -> List[str]:
+        """
+        :returns: 2048 words of specified language
+        """
         if self.language in Mnemonic.cached_wordlists.keys():
             return Mnemonic.cached_wordlists[self.language]
 
-        # Load File. Content must be SORTED for english for binary search!
+        # load file. Content must be SORTED for english for binary search!
         file_path = os.path.join(os.path.dirname(__file__), f"wordlist/{self.language}.txt")
         if os.path.exists(file_path) and os.path.isfile(file_path):
             with open(file_path, "r", encoding="utf-8") as file:
@@ -70,6 +87,9 @@ class Mnemonic(object):
     @staticmethod
     def get_languages() \
             -> List[str]:
+        """
+        :returns: list of possible languages that you can use to construct :class:`Mnemonic` class
+        """
         if Mnemonic.cached_language_list:
             return Mnemonic.cached_language_list
 
@@ -84,6 +104,13 @@ class Mnemonic(object):
     @staticmethod
     def detect_language(raw_mnemonic) \
             -> str:
+        """
+        If matches to both chinese simplified and chinese traditional, chinese simplified is returned
+
+        :param raw_mnemonic: list of words separated by space
+        :returns: language
+        :raises Exception: if no match or matches more than single language
+        """
         mnemonic = normalize_string(raw_mnemonic)
 
         words = set(mnemonic.split(" "))
@@ -113,11 +140,13 @@ class Mnemonic(object):
     def generate(self, strength: int = 256) \
             -> str:
         """
-        Entropy must be a multiple of 32 bits, possible values for `strength` are 128, 160, 192, 224 and 256.
+        Entropy must be a multiple of 32 bits.
 
-        strength:
-        128 -> 12 words
-        256 -> 24 words
+        :param strength: possible values are 128, 160, 192, 224, 256.
+                        128->12 words, 256->24 words
+        :returns: words
+        :raises ValueError: if strength is not valid
+        :raises Exception: if result mnemonic is somehow not valid
         """
 
         if strength not in [128, 160, 192, 224, 256]:
@@ -127,6 +156,12 @@ class Mnemonic(object):
 
     def to_mnemonic(self, entropy_bytes: bytes) \
             -> str:
+        """
+        :param entropy_bytes: possible length: 16, 20, 24, 28, 32
+        :return: words
+        :raises ValueError: if entropy_bytes is not valid
+        :raises Exception: if result mnemonic is somehow not valid
+        """
         if len(entropy_bytes) not in [16, 20, 24, 28, 32]:
             raise ValueError(f"Data length should be one of the following: [16, 20, 24, 28, 32], "
                              f"but it is not {len(entropy_bytes)}.")
@@ -162,8 +197,10 @@ class Mnemonic(object):
     def is_mnemonic_valid(self, mnemonic: str) \
             -> bool:
         """
-        You can't use random 12-24 words, checksum will fail.
-        It must have been generated using algorithm
+        You can't use random 12-24 words, checksum will fail.\n
+        It must have been generated using algorithm.
+
+        :param mnemonic: words, in length of 12, 15, 18, 21, 24
         """
 
         words: List[str] = normalize_string(mnemonic).split(" ")
@@ -201,14 +238,14 @@ class Mnemonic(object):
                 passphrase: str = "") \
             -> bytes:
         """
-        returns 64 bytes seed used to generate "hd master key"
+        :returns: 64 bytes seed used to generate "hd master key"
         """
 
         PBKDF2_ROUNDS = 2048
 
         mnemonic = normalize_string(mnemonic)
         passphrase = normalize_string(passphrase)
-        # This domain separator ("mnemonic") is added per BIP39 spec to the passphrase
+        # this domain separator ("mnemonic") is added per BIP39 spec to the passphrase
         # https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed
         passphrase = "mnemonic" + passphrase
 
@@ -226,7 +263,8 @@ class Mnemonic(object):
     def expand_word(self, prefix: str) \
             -> str:
         """
-        Expands input prefix to full word, only if single target word is found in wordlist
+        Expands input prefix to full word, only if single target word is found in wordlist.
+        Returns input itself if it can't expand.\n
         E.g: acce -> access
         """
 
@@ -244,7 +282,7 @@ class Mnemonic(object):
     def expand(self, mnemonic: str) \
             -> str:
         """
-        Expand each unfinished word in mnemonic to full word, if possible
+        Expand each unfinished word in mnemonic to full word, if possible.\n
         E.g: "access acce acb acc act acti" -> "access access acb acc act action"
         """
 
@@ -253,7 +291,11 @@ class Mnemonic(object):
     def to_entropy(self, words: Union[List[str], str]) \
             -> bytes:
         """
-        Source: <https://github.com/bitcoinj/bitcoinj/> #MnemonicCode.java
+        Convert wordlist to original entropy value.\n
+        Source: https://github.com/bitcoinj/bitcoinj/blob/110da9691195f47b376872f95d81476e10b0e902/core/src/main/java/org/bitcoinj/crypto/MnemonicCode.java#L52
+
+        :raises ValueError: if length of words is not valid or failed checksum
+        :raises LookupError: if word is not found in wordlist
         """
 
         if not isinstance(words, list):
@@ -319,6 +361,8 @@ class Mnemonic(object):
             -> str:
         """
         a.k.a. Root Key. Only for master node
+
+        :raises ValueError: if length of seed is not 64
         """
 
         if len(seed) != 64:
